@@ -1,2 +1,2 @@
-# diverout-automation
+# automation
 automatic test

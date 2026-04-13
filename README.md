@@ -1,4 +1,2 @@
 # automation
 automatic test
-
-

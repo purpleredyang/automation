@@ -1,8 +1,14 @@
 import pytest
 import time
+import os
 from appium import webdriver
 from appium.options.ios import XCUITestOptions
 from appium.webdriver.common.appiumby import AppiumBy
+
+from env_utils import load_env_file
+
+
+load_env_file()
 
 @pytest.fixture(scope="class")
 def driver():
@@ -12,8 +18,9 @@ def driver():
     options = XCUITestOptions()
     options.platform_name = "iOS"
     options.automation_name = "XCUITest"
-    options.udid = "A1BE37E2-D482-4B1D-861B-4B2372E2BD57"
-    options.bundle_id = "com.diverout.diverout.dev"
+    bundle_id = os.getenv("BUNDLE_ID", "com.diverout.diverout.dev")
+    appium_server_url = os.getenv("APPIUM_SERVER_URL", "http://127.0.0.1:4723")
+    options.bundle_id = bundle_id
     options.set_capability("noReset", True)
     options.set_capability("autoAcceptAlerts", True)
     options.set_capability("usePrebuiltWDA", True)  # [PUA加速 🔥] 減少編譯損耗
@@ -21,7 +28,7 @@ def driver():
     options.set_capability("wdaLaunchTimeout", 60000)
     options.set_capability("shouldTerminateApp", True)
 
-    driver = webdriver.Remote("http://127.0.0.1:4723", options=options)
+    driver = webdriver.Remote(appium_server_url, options=options)
     driver.implicitly_wait(10)
 
     # 只保留最簡單的啟動時排除

@@ -1,21 +1,29 @@
-import requests
-import uuid
 import datetime
+import os
+import uuid
+
+import requests
 from datetime import timedelta
+
+from env_utils import get_required_env, load_env_file
 
 class DiverOutAPIClient:
     def __init__(self, base_url="https://api-dev.diverout.com"):
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         
-    def login_with_cookie(self, session_id_cookie, cdn_cookie):
+    def login_with_cookie(self, session_id_cookie, cdn_cookie=None):
         self.session.cookies.set('sessionId', session_id_cookie)
-        self.session.cookies.set('Cloud-CDN-Cookie', cdn_cookie)
+        if cdn_cookie:
+            self.session.cookies.set('Cloud-CDN-Cookie', cdn_cookie)
         self.session.headers.update({
             "User-Agent": "DiverOut-Automated-QA-Client",
             "Content-Type": "application/json"
         })
-        print("Cookies 設置完成，API Client 初始化完畢！")
+        if cdn_cookie:
+            print("sessionId 與 Cloud-CDN-Cookie 設置完成，API Client 初始化完畢！")
+        else:
+            print("sessionId 設置完成，未提供 Cloud-CDN-Cookie。")
 
     def test_authentication(self, endpoint_path="/v4/auth/me"):
         url = f"{self.base_url}{endpoint_path}"
@@ -74,16 +82,20 @@ class DiverOutAPIClient:
         print(f"已成功發布了 {success_count} / {count} 筆假潛水紀錄！")
 
 if __name__ == "__main__":
+    load_env_file()
     client = DiverOutAPIClient()
-    
-    # User 驗證資料
-    SESSION_ID = "s:6bd8b195-624f-4c40-8996-88eda98ac719.Xb0Q8Jt3M/TdeANfVv/4DXXQB90JNezl3kUS9jMLHaM"
-    CDN_COOKIE = "URLPrefix=aHR0cHM6Ly9zdGF0aWMtZGV2LmRpdmVyb3V0LmNvbS92aWRlb3Mv:Expires=1775398475:KeyName=static-lb-be-sign-key:Signature=syxIU4eKOsdxLzAn0nacjckz3p8"
-    
+
+    # User 驗證資料從 .env 讀取，避免敏感資訊進版控。
+    SESSION_ID = get_required_env("SESSION_ID")
+    CDN_COOKIE = os.getenv("CDN_COOKIE") or None
+    auth_id = os.getenv("AUTH_ID")
+    if auth_id:
+        print("AUTH_ID 已載入。")
+
     client.login_with_cookie(SESSION_ID, CDN_COOKIE)
-    
+
     # 測試驗證
     client.test_authentication()
-    
+
     # 當未來需要造 50 筆資料時，把這行的註解拿掉執行即可：
     # client.create_mock_dive_logs(50, post_type="scuba")

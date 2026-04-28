@@ -193,6 +193,15 @@ All scripts support `--help` for detailed options and `--json` for machine-reada
 5. Verify: `python scripts/accessibility_audit.py`
 6. Debug if needed: `python scripts/app_state_capture.py --app-bundle-id com.example.app`
 
+## Commit Handoff
+
+When automation work is about to be committed, prepare a short handoff before `git commit`:
+
+1. Write a brief description of what changed and why.
+2. Record how the change was verified, including commands run and outcomes.
+3. Preserve visual evidence for UI or flow changes when possible, such as screenshots, screen recordings, dumps, or generated reports.
+4. Store temporary evidence under `.tmp/commit-notes/<date>-<topic>/` so version-to-version differences are easier to inspect before cleanup.
+
 ## Requirements
 
 - macOS 12+

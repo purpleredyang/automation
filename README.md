@@ -13,6 +13,22 @@ This repository now includes shared Codex instructions in [AGENTS.md](AGENTS.md)
 - `e2e-studio-tests`: Use when the task is specifically about running or debugging Studio Playwright end-to-end tests.
 - `interior-design-expert`: Migrated from the previous workspace and available here, but not directly related to this repo's main automation workflow.
 
+## Local Environment
+
+Create a local `.env` from [.env.example](./.env.example) for secrets and machine-specific settings.
+
+Example values:
+
+```env
+SESSION_ID=your-session-id
+CDN_COOKIE=optional-cdn-cookie
+AUTH_ID=optional-auth-id
+BUNDLE_ID=com.diverout.diverout.dev
+APPIUM_SERVER_URL=http://127.0.0.1:4723
+```
+
+The repository ignores `.env`, so your local secrets stay out of git history.
+
 ## Migrated Documentation
 
 - `resources/AccessibilityIdentifiers/`

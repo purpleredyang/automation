@@ -75,8 +75,8 @@ class DiverOutAPIClient:
 
 if __name__ == "__main__":
     client = DiverOutAPIClient()
-    SESSION_ID = "s:6bd8b195-624f-4c40-8996-88eda98ac719.Xb0Q8Jt3M/TdeANfVv/4DXXQB90JNezl3kUS9jMLHaM"
-    CDN_COOKIE = "URLPrefix=aHR0cHM6Ly9zdGF0aWMtZGV2LmRpdmVyb3V0LmNvbS92aWRlb3Mv:Expires=1775398475:KeyName=static-lb-be-sign-key:Signature=syxIU4eKOsdxLzAn0nacjckz3p8"
+    SESSION_ID = os.getenv("SESSION_ID")
+    CDN_COOKIE = os.getenv("CDN_COOKIE")
     client.login_with_cookie(SESSION_ID, CDN_COOKIE)
     client.test_authentication()
 ```

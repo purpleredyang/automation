@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *.class
 
+# macOS
+.DS_Store
+
 # 環境與工具
 .venv/
 env/

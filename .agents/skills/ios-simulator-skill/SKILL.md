@@ -201,6 +201,8 @@ When automation work is about to be committed, prepare a short handoff before `g
 2. Record how the change was verified, including commands run and outcomes.
 3. Preserve visual evidence for UI or flow changes when possible, such as screenshots, screen recordings, dumps, or generated reports.
 4. Store temporary evidence under `.tmp/commit-notes/<date>-<topic>/` so version-to-version differences are easier to inspect before cleanup.
+5. If the repo uses QA handoff notes, write `resources/qa_notes/<date>-<topic>/AI-Content.md` and `resources/qa_notes/<date>-<topic>/ToDo.md`.
+6. Do not create `handoff-record.md` for this flow unless the user explicitly asks for it.
 
 ## Requirements
 

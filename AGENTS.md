@@ -36,6 +36,8 @@
 - 預設流程是 AI 協助修改、驗證、整理摘要；由使用者做最後確認後再 commit
 - 不預設自動 commit，除非使用者明確要求
 - commit 前應保留這次改動的 description 與驗證紀錄，必要時附上截圖、dump 或其他視覺化資料
+- 若本次工作有明確的 QA / automation 交接需求，結束前需在 `resources/qa_notes/<日期>-<主題>/` 補齊 `AI-Content.md` 與 `ToDo.md`
+- 不要另外建立 `handoff-record.md`；交接以 `AI-Content.md` 與 `ToDo.md` 為準
 ## 自退火循環
 錯誤是學習的機會。當出現問題時：
 1. 修復問題

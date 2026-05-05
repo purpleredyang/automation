@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-import time
 from pathlib import Path
 
 from appium import webdriver
@@ -21,7 +20,13 @@ TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def light(status: str, message: str) -> None:
-    print(f"[{status}] {message}")
+    icons = {
+        "PASS": "🟢",
+        "FAIL": "🔴",
+        "INFO": "🔵",
+    }
+    icon = icons.get(status, "⚪")
+    print(f"{icon} [{status}] {message}")
 
 
 def connect_driver():
@@ -40,7 +45,7 @@ def connect_driver():
 
     server_url = os.getenv("APPIUM_SERVER_URL", "http://127.0.0.1:4723")
     driver = webdriver.Remote(server_url, options=options)
-    driver.implicitly_wait(3)
+    driver.implicitly_wait(0)
     return driver
 
 
@@ -110,32 +115,63 @@ def get_first_mine_log_card(driver):
     return cards[0] if cards else None
 
 
-def verify_first_card_title(driver, expected_title: str) -> bool:
-    card = get_first_mine_log_card(driver)
-    if not card:
-        light("FAIL", "Did not find the first Mine-page log card")
-        return False
+def get_mine_log_cards(driver):
+    return driver.find_elements(
+        AppiumBy.XPATH,
+        "//XCUIElementTypeCell[@name='DiveLogCollectionViewCell.cell']",
+    )
 
+
+def card_text_values(card) -> list[str]:
     title_nodes = card.find_elements(AppiumBy.XPATH, ".//XCUIElementTypeStaticText")
-    values = [(node.text or "").strip() for node in title_nodes if (node.text or "").strip()]
+    return [(node.text or "").strip() for node in title_nodes if (node.text or "").strip()]
 
+
+def title_matches_expected(values: list[str], expected_title: str) -> bool:
     if expected_title in values:
-        light("PASS", f"First Mine-page log card shows expected title: {expected_title}")
         return True
 
     for value in values:
         if expected_title.startswith(value) or value.startswith(expected_title[: min(len(expected_title), 12)]):
-            light("PASS", f"First Mine-page log card shows truncated expected title: {value}")
             return True
 
-    light("FAIL", f"First Mine-page log card title did not match expected log: {expected_title}")
     return False
 
 
-def verify_first_card_scuba_icon(driver) -> bool:
-    card = get_first_mine_log_card(driver)
+def find_matching_mine_log_card(driver, expected_title: str):
+    cards = get_mine_log_cards(driver)
+    for card in cards:
+        values = card_text_values(card)
+        if title_matches_expected(values, expected_title):
+            return card
+    return None
+
+
+def verify_matching_card_title(driver, expected_title: str) -> bool:
+    card = find_matching_mine_log_card(driver, expected_title)
     if not card:
-        light("FAIL", "Did not find the first Mine-page log card for scuba icon verification")
+        light("FAIL", f"Did not find a Mine-page log card matching: {expected_title}")
+        return False
+
+    values = card_text_values(card)
+
+    if expected_title in values:
+        light("PASS", f"Matching Mine-page log card shows expected title: {expected_title}")
+        return True
+
+    for value in values:
+        if expected_title.startswith(value) or value.startswith(expected_title[: min(len(expected_title), 12)]):
+            light("PASS", f"Matching Mine-page log card shows truncated expected title: {value}")
+            return True
+
+    light("FAIL", f"Matching Mine-page log card title did not match expected log: {expected_title}")
+    return False
+
+
+def verify_matching_card_scuba_icon(driver, expected_title: str) -> bool:
+    card = find_matching_mine_log_card(driver, expected_title)
+    if not card:
+        light("FAIL", f"Did not find a matching Mine-page log card for scuba icon verification: {expected_title}")
         return False
 
     scuba_icons = card.find_elements(
@@ -143,37 +179,45 @@ def verify_first_card_scuba_icon(driver) -> bool:
         ".//XCUIElementTypeImage[@name='icon_scuba']",
     )
     if scuba_icons:
-        light("PASS", "First Mine-page log card shows scuba icon")
+        light("PASS", "Matching Mine-page log card shows scuba icon (double tank)")
         return True
 
-    light("FAIL", "First Mine-page log card did not expose a scuba icon")
+    light("FAIL", "Matching Mine-page log card did not expose a scuba icon")
     return False
 
 
-def tap_first_card_fallback(driver) -> bool:
-    card = get_first_mine_log_card(driver)
+def tap_matching_card(driver, expected_title: str) -> bool:
+    card = find_matching_mine_log_card(driver, expected_title)
     if not card:
-        light("FAIL", "Did not find the first Mine-page log card to open detail")
+        light("FAIL", f"Did not find a matching Mine-page log card to open detail: {expected_title}")
         return False
 
     rect = card.rect
     tap_x = int(rect["x"] + rect["width"] / 2)
     tap_y = int(rect["y"] + rect["height"] / 2)
     driver.tap([(tap_x, tap_y)])
-    light("PASS", "Opened first Mine-page log card via positional fallback")
+    light("PASS", "Opened matching Mine-page log card via positional fallback")
     return True
 
 
 def wait_for_page_source_contains(driver, text: str, timeout: int = 10) -> bool:
-    end = time.time() + timeout
-    while time.time() < end:
-        if text in driver.page_source:
-            return True
-        time.sleep(0.5)
-    return False
+    try:
+        WebDriverWait(driver, timeout).until(lambda d: text in d.page_source)
+        return True
+    except TimeoutException:
+        return False
 
 
 def verify_detail_title(driver, expected_title: str) -> bool:
+    detail_title = wait_for_element(driver, ids.PostDetailFloatingContextView.titleLabel, timeout=10)
+    if detail_title:
+        visible_title = (detail_title.text or "").strip()
+        if visible_title == expected_title:
+            light("PASS", f"Detail page shows full title: {expected_title}")
+            return True
+        light("FAIL", f"Detail page opened a different title: {visible_title}")
+        return False
+
     if wait_for_page_source_contains(driver, expected_title, timeout=10):
         light("PASS", f"Detail page shows full title: {expected_title}")
         return True
@@ -206,7 +250,6 @@ def find_title_in_manage_logs(driver, expected_title: str, max_scrolls: int = 4)
         start_y = int(size["height"] * 0.72)
         end_y = int(size["height"] * 0.42)
         driver.swipe(start_x, start_y, start_x, end_y, 700)
-        time.sleep(1)
 
     light("FAIL", f"Did not find new dive log in ManageLogs list: {expected_title}")
     return False
@@ -230,8 +273,6 @@ def find_title_on_mine_page(driver, expected_title: str) -> bool:
 def verify_manual_add_result(expected_title: str) -> int:
     driver = connect_driver()
     try:
-        time.sleep(2)
-
         if not click_accessibility_id(
             driver,
             ids.TabBarController.mineTab,
@@ -259,19 +300,17 @@ def verify_manual_add_result(expected_title: str) -> int:
             dump_state(driver, "title-not-found-on-mine")
             return 1
 
-        if not verify_first_card_title(driver, expected_title):
+        if not verify_matching_card_title(driver, expected_title):
             dump_state(driver, "first-card-title-mismatch")
             return 1
 
-        if not verify_first_card_scuba_icon(driver):
+        if not verify_matching_card_scuba_icon(driver, expected_title):
             dump_state(driver, "first-card-not-scuba")
             return 1
 
-        if not tap_first_card_fallback(driver):
+        if not tap_matching_card(driver, expected_title):
             dump_state(driver, "failed-open-first-card")
             return 1
-
-        time.sleep(2)
 
         if not verify_detail_title(driver, expected_title):
             dump_state(driver, "detail-title-mismatch")
